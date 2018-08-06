@@ -1,0 +1,75 @@
+1.
+"many language so book"
+"such build many wow"
+
+2.
+Those are escape sequences so that the string
+includes the quote, instead of the quote closing the string
+
+3.
+You use \ to split the string into multiple lines
+
+4.
+Integer - 0-9
+Decimal - .
+Decimal Num - One or more integers or 0, then a decimal,
+then one or more integers or a 0
+
+Integer: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+Decimal: .
+Decimal num: <Integer>+ <Decimal> <Integer>+
+
+5.
+Protocol - http or https or ftp etc...
+Separator - ://
+Host - "www" or nothing
+Authoritative name - a combination of alphanumeric characters, one or more
+Top level domain - .com, .net, etc
+domain - host and authoriative name and top level domain
+url - protocol and separator and domain
+
+Protocol - http | https | ftp
+Separator - ://
+Host - www | ""
+Authoritative name - .[a-z0-9]+
+TLD - .com | .net | .edu
+domain - <Host> <Authoritative name> <TLD>
+url - <protocol> <seperator> <domain>
+
+6.
+article - the, a
+noun - cat, dog, etc
+verb - sat, jumped, etc
+preposition - on, under, over, etc
+noun piece - article and noun
+sentence - noun piece and verb and preposition and noun piece
+phrase - 0 or more sentences
+
+
+article - the | a
+noun - cat | dog | thing
+verb - sat | jumped
+preposition - on | under
+noun piece - <article> <noun>
+sentence - <noun piece> <verb> <preposition> <noun piece>
+phrase - <sentence>*
+
+7. Json
+key - "identifier":
+value - "text" | 0-9* | true | false
+array - [<value>,*]
+object - {
+          <property>*
+          }
+property - <key> <value> | <array> | <object>
+
+Chapter 6 ----
+
+1.
+/(a|b)+/
+
+2.
+/(ab)+a?/
+
+3.
+/^(res)?p(i|o)te?$/
