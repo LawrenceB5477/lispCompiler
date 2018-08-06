@@ -38,10 +38,11 @@ typedef struct {
   int type;
   long num;
   int err;
+  double flt;
 } lval;
 
 //Decleration of type enums for lval struct
-enum {LVAL_NUM, LVAL_ERR};
+enum {LVAL_NUM, LVAL_ERR, LVAL_FLT};
 
 //Decleration of error type enums
 enum {LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM};
@@ -62,11 +63,22 @@ lval lval_err(int x) {
   return v;
 }
 
+//Create a floating point lvalue
+lval lval_flt(double x) {
+  lval v;
+  v.type = LVAL_FLT;
+  v.flt = x;
+  return v;
+}
+
 //Function to print out lvalue
 void lval_print(lval v) {
   switch (v.type) {
     case LVAL_NUM:
       printf("%li", v.num);
+      break;
+    case LVAL_FLT:
+      printf("%f", v.flt);
       break;
     case LVAL_ERR:
       if (v.err == LERR_DIV_ZERO) {
@@ -151,48 +163,102 @@ long power(long x, long y) {
     return res;
 }
 
+double power_flt(double x, double y) {
+  double res = 1;
+  for (int i = 0; i < (int)y; i++) {
+    res *= x;
+  }
+  return res;
+}
+
 //Does arithmetic computations
 lval eval_op(lval x, char* op, lval y) {
-  if (x.type == LVAL_ERR)
+  //If the data is bad to begin with
+  if (x.type == LVAL_ERR) {
     return x;
-  if (y.type == LVAL_ERR)
+  }
+  if (y.type == LVAL_ERR) {
      return y;
-  if (!strcmp(op, "+"))
-    return lval_num(x.num + y.num);
-  if (!strcmp(op, "-"))
-    return lval_num(x.num - y.num);
-  if (!strcmp(op, "*"))
-    return lval_num(x.num * y.num);
-  if (!strcmp(op, "/"))
-    // Check for division by zero
-    return (y.num == 0) ? lval_err(LERR_DIV_ZERO) : lval_num(x.num / y.num);
-  if (!strcmp(op, "%"))
-    return lval_num(x.num % y.num);
-  if (!strcmp(op, "^"))
-      return lval_num(power(x.num, y.num));
-  if (!strcmp(op, "min")) {
-    if (x.num < y.num)
-      return x;
-    else
-      return y;
-  }
-  if (!strcmp(op, "max")) {
-    if (x.num > y.num)
-      return x;
-    else
-      return y;
-  }
+   }
 
-  return lval_err(LERR_BAD_OP);
+  //For both integer number types
+  if (x.type == LVAL_NUM && y.type == LVAL_NUM) {
+    if (!strcmp(op, "+"))
+      return lval_num(x.num + y.num);
+    if (!strcmp(op, "-"))
+      return lval_num(x.num - y.num);
+    if (!strcmp(op, "*"))
+      return lval_num(x.num * y.num);
+    if (!strcmp(op, "/"))
+      // Check for division by zero
+      return (y.num == 0) ? lval_err(LERR_DIV_ZERO) : lval_num(x.num / y.num);
+    if (!strcmp(op, "%"))
+      return lval_num(x.num % y.num);
+    if (!strcmp(op, "^"))
+        return lval_num(power(x.num, y.num));
+    if (!strcmp(op, "min")) {
+      if (x.num < y.num)
+        return x;
+      else
+        return y;
+    }
+    if (!strcmp(op, "max")) {
+      if (x.num > y.num)
+        return x;
+      else
+        return y;
+    }
+    return lval_err(LERR_BAD_OP);
+
+    //For both double types
+  } else if (x.type == LVAL_FLT && y.type == LVAL_FLT) {
+    if (!strcmp(op, "+")) {
+      return lval_flt(x.flt + y.flt);
+    }
+    if (!strcmp(op, "-"))
+      return lval_flt(x.flt - y.flt);
+    if (!strcmp(op, "*"))
+      return lval_flt(x.flt * y.flt);
+    if (!strcmp(op, "/"))
+      // Check for division by zero
+      return (y.num == 0) ? lval_err(LERR_DIV_ZERO) : lval_flt(x.flt / y.flt);
+    if (!strcmp(op, "%"))
+      return lval_err(LERR_BAD_OP);
+    if (!strcmp(op, "^"))
+        return lval_flt(power_flt(x.flt, y.flt));
+    if (!strcmp(op, "min")) {
+      if (x.num < y.num)
+        return x;
+      else
+        return y;
+    }
+    if (!strcmp(op, "max")) {
+      if (x.num > y.num)
+        return x;
+      else
+        return y;
+    }
+    return lval_err(LERR_BAD_OP);
+    //If the numbers are not of the same type
+    //TODO do this
+  } else {
+    return lval_err(LERR_BAD_NUM);
+  }
 }
 
 //This evaluates the polish notation expressions
 lval eval(mpc_ast_t* t) {
   // If the node is a number, return the number
   if (strstr(t->tag, "number")) {
-    errno = 0;
-    long x = strtol(t->contents, NULL, 10);
-    return errno != ERANGE ? lval_num(x) : lval_err(LERR_BAD_NUM);
+    if (strstr(t->contents, ".")) {
+      double x = strtod(t->contents, NULL);
+      lval test =  (x == 0.0) ? lval_err(LERR_BAD_NUM) : lval_flt(x);
+      return test;
+    } else {
+      errno = 0;
+      long x = strtol(t->contents, NULL, 10);
+      return errno != ERANGE ? lval_num(x) : lval_err(LERR_BAD_NUM);
+    }
   }
 
   //Else, the node is probably the root of a nested expression
@@ -208,7 +274,7 @@ lval eval(mpc_ast_t* t) {
     i++;
   }
   if (i==3 && !strcmp(op, "-"))
-    return lval_num(-x.num);
+    return (x.type == LVAL_NUM) ? lval_num(-x.num) : lval_flt(-x.flt);
   return x;
 }
 
@@ -227,7 +293,7 @@ int main(int argc, char** argv) {
 
   mpca_lang(MPCA_LANG_DEFAULT,
     "                                                     \
-      number   : /-?[0-9]+/ ;                             \
+      number   : /-?[0-9]+([.][0-9]+)?/;                    \
       operator : '+' | '-' | '*' | '/' | '%' | '^'        \
       | \"min\" | \"max\";                                \
       expr     : <number> | '(' <operator> <expr>+ ')' ;  \
@@ -279,7 +345,7 @@ int main(int argc, char** argv) {
       printf("\nNumber of branches: %d", number_of_branches(root));
       printf("\nLargest number of leaves: %d\n", most_leaves(root, 0));
       lval result = eval(root);
-      lval_println(result); 
+      lval_println(result);
       //printf("Result: %li\n\n", eval(root));
       mpc_ast_delete(r.output);
     } else {
